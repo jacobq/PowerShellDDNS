@@ -39,6 +39,7 @@ $config = New-Module -Name DynamicDNSUpdaterConfiguration {
     [string]$address = ""            
     [string]$base_url = "http://freedns.afraid.org/dynamic/update.php"
     [string]$authorization_code = ""
+    [bool]$show_help = $false
     [bool]$use_remote_ip = $true
     [bool]$dhcp_only = $false
     [bool]$ignore_rfc1918 = $true
@@ -46,17 +47,14 @@ $config = New-Module -Name DynamicDNSUpdaterConfiguration {
     [int]$adapter_index = 0
     [bool]$version = $false
 
-
-    function load_from_arguments($parameters) {    
+    function load_from_arguments($parameters) {
         for($i = 0; $i -lt $parameters.length; $i++) {
             switch ($parameters[$i]) { 
                 {($_ -eq "-a") -or ($_ -eq "--address")} {$script:address = $parameters[++$i]} 
                 {($_ -eq "-b") -or ($_ -eq "--base-url")} {$script:base_url = $parameters[++$i]} 
                 {($_ -eq "-c") -or ($_ -eq "--authorization-code")} {$script:authorization_code = $parameters[++$i]} 
                 {($_ -eq "-d") -or ($_ -eq "--dhcp-only")} {$script:dhcp_only = $true}
-                {($_ -eq "-h") -or ($_ -eq "--help")} { $global:usage_information
-                    exit(0);
-                }
+                {($_ -eq "-h") -or ($_ -eq "--help")} {$script:show_help = $true}
                 {($_ -eq "-i") -or ($_ -eq "--ignore-rfc1918-addresses")} {$script:ignore_rfc1918 = $true}
                 {($_ -eq "-l") -or ($_ -eq "--use-local-ip")} {
                     $script:use_remote_ip = $false;
@@ -80,9 +78,16 @@ $config = New-Module -Name DynamicDNSUpdaterConfiguration {
     Export-ModuleMember -Variable * -Function *                
 } -asCustomObject   
 
+
 #DEBUG
 #$args|Format-List|Out-Host
+
 $config.load_from_arguments($args)
+if ($config.show_help -eq $true) {
+    $global:usage_information
+    exit
+}
+
 
 #DEBUG
 #$config | Format-List
@@ -127,7 +132,7 @@ if ($config.use_remote_ip -eq $false) {
 #"-----"
 
 
-#"Result:"    
+#"Result:"
 #$ip_address
 
 # Prepare HTTP request to update the dynamic DNS entry
@@ -144,4 +149,4 @@ if ($config.use_remote_ip -eq $false) {
 $webclient = New-Object System.Net.WebClient
 $payload = "";
 $result = $webclient.UploadString($config.base_url + "?" + $([string]::join("&", $url_parameters)), $payload)
-$result | Format-List 
+$result | Format-List
